@@ -72,11 +72,6 @@ CREATE UNLOGGED TABLE users_forum
     UNIQUE (nickname, slug)
 );
 
-CREATE INDEX all_users_forum ON users_forum (nickname, fullname, about, email);
-CLUSTER users_forum USING all_users_forum;
-CREATE INDEX nickname_users_forum ON users_forum using hash (nickname);
-CREATE INDEX f_a_e_users_forum ON users_forum (fullname, about, email);
-
 CREATE OR REPLACE FUNCTION update_user_forum() RETURNS TRIGGER AS
 $update_users_forum$
 DECLARE
@@ -148,7 +143,6 @@ end
 $update_path$
 LANGUAGE plpgsql;
 
-CREATE INDEX path_ ON post (path);
 
 CREATE TRIGGER add_thread_in_forum
     BEFORE INSERT
@@ -181,21 +175,27 @@ CREATE TRIGGER post_insert_user_forum
     FOR EACH ROW EXECUTE PROCEDURE update_user_forum();
 
 
-CREATE INDEX IF NOT EXISTS user_nickname  ON users using hash (nickname);
-CREATE INDEX IF NOT EXISTS user_email     ON users using hash (email);
-CREATE INDEX IF NOT EXISTS forum_slug     ON forum using hash (slug);
-CREATE INDEX IF NOT EXISTS thr_slug       ON thread using hash (slug);
+CREATE INDEX IF NOT EXISTS all_users_forum ON users_forum (nickname, fullname, about, email);
+CLUSTER users_forum USING all_users_forum;
+CREATE INDEX IF NOT EXISTS nickname_users_forum ON users_forum USING HASH (nickname);
+CREATE INDEX IF NOT EXISTS fullname_about_email_users_forum ON users_forum (fullname, about, email);
+CREATE INDEX IF NOT EXISTS path_post ON post (path);
+
+CREATE INDEX IF NOT EXISTS user_nickname  ON users  USING HASH (nickname);
+CREATE INDEX IF NOT EXISTS user_email     ON users  USING HASH (email);
+CREATE INDEX IF NOT EXISTS forum_slug     ON forum  USING HASH (slug);
+CREATE INDEX IF NOT EXISTS thr_slug       ON thread USING HASH (slug);
+CREATE INDEX IF NOT EXISTS thr_forum      ON thread USING HASH (forum);
 CREATE INDEX IF NOT EXISTS thr_date       ON thread (created);
-CREATE INDEX IF NOT EXISTS thr_forum      ON thread using hash (forum);
 CREATE INDEX IF NOT EXISTS thr_forum_date ON thread (forum, created);
-CREATE INDEX IF NOT EXISTS post_id_path   ON post (id, (path[1]));
-CREATE INDEX IF NOT EXISTS post_path1     ON post ((path[1]));
-CREATE INDEX IF NOT EXISTS post_thread_id ON post (thread, id);
-CREATE INDEX IF NOT EXISTS post_thr_id    ON post (thread);
+CREATE INDEX IF NOT EXISTS post_id_path   ON post   (id, (path[1]));
+CREATE INDEX IF NOT EXISTS post_path1     ON post   ((path[1]));
+CREATE INDEX IF NOT EXISTS post_thread_id ON post   (thread, id);
+CREATE INDEX IF NOT EXISTS post_thread    ON post   (thread);
 CREATE INDEX IF NOT EXISTS post_thread_id_path1_parent ON post (thread, id, (path[1]), parent);
-CREATE INDEX IF NOT EXISTS post_thread_path_id ON post (thread, path, id);
-CREATE INDEX IF NOT EXISTS post_path1_path_id_desc ON post ((path[1]) DESC, path, id);
-CREATE INDEX IF NOT EXISTS post_path1_path_id_asc ON post ((path[1]) DESC, path, id);
+CREATE INDEX IF NOT EXISTS post_thread_path_id         ON post (thread, path, id);
+CREATE INDEX IF NOT EXISTS post_path1_path_id_desc     ON post ((path[1]) DESC, path, id);
+CREATE INDEX IF NOT EXISTS post_path1_path_id_asc      ON post ((path[1]) DESC, path, id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS  vote_unique ON votes (nickname, thread_id);
 CREATE UNIQUE INDEX IF NOT EXISTS  forum_users_unique ON users_forum (slug, nickname);
